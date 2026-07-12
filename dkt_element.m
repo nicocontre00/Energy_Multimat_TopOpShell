@@ -1,10 +1,10 @@
-function [kdkt] = dkt_element(mesh,pdecoef)%(p_shell,t,C,localcoordinates,A)
+function [kdkt] = dkt_element(mesh,pdecoef,c)%(p_shell,t,C,localcoordinates,A)
 
 % Extract data from struct 
 
     nt = mesh.nt;
     A = mesh.A;
-    c = pdecoef.c_dkt;
+%   c = pdecoef.c_dkt;
 
 % Materials propierties:
 

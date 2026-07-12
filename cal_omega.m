@@ -1,4 +1,4 @@
-function [volume,vol_void] = cal_omega(phifunct,dim,element,problembsc,coordinates)
+function [volume,vol_void] = cal_omega(phifunct,dim,element,problembsc,coordinates,pdecoef)
 
 nelem=dim.nelem; nndof=dim.nndof; nnode=dim.nnode;
 ndime=dim.ndime; npnod=dim.npnod; nunkn = dim.nunkn; nstre = dim.nstre;
@@ -26,7 +26,7 @@ pos_porder(3,:,:) = coordinates(nodes_border(3,:),:)';
 
 vol_void = zeros(1,nelem);
 vol_void(1,index_empty) = 1;
-vol_void(1,index_border) = comp_vol_case(phi_border,pos_porder,type_border);
+vol_void(1,index_border) = comp_vol_case(phi_border,pos_porder,type_border,pdecoef);
 vol_void(1,index_full) = 0;
 vol_void(1,element.boundary_elements) = 0; %fixed elements
 
@@ -50,24 +50,57 @@ area = pdetrg(coordinates',element.conectivities');
 evol = area.*(1-vol_void);
 volume = sum(evol)/sum(area);
 
-
 end
 
 
-
-function vol_void = comp_vol_case(phifunct,pos,type)
+function vol_void = comp_vol_case(phifunct,pos,type,pdecoef)
 
 cases = [1 2; 2 3; 3 1];
 
 for icases = 1:size(cases,1)
 
     index_case = ( sign(phifunct(cases(icases,1),:)) + (phifunct(cases(icases,1),:)==0) ).* ( sign(phifunct(cases(icases,2),:)) + (phifunct(cases(icases,2),:)==0))> 0;
-    vol_void(index_case) = compute_vol_void(phifunct(:,index_case),pos(:,:,index_case),type(index_case),cases(icases,1),cases(icases,2),setdiff([1:3],cases(icases,:)));
+    vol_void(index_case) = compute_vol_void(phifunct(:,index_case),pos(:,:,index_case),type(index_case),cases(icases,1),cases(icases,2),setdiff([1:3],cases(icases,:)),pdecoef);
 end
 
 end
 
-function [vol_void,vol_t] = compute_vol_void(phifunct,pos,type,index_p1,index_p2,index_n)
+function [vol_void,vol_t] = compute_vol_void(phifunct,pos,type,index_p1,index_p2,index_n,pdecoef)
+
+	     if size(pdecoef.f,1)==6;
+         
+         xcort(1,1,:) = (-phifunct(index_n,:)'.*squeeze(pos(index_p1,1,:)) + phifunct(index_p1,:)'.*squeeze(pos(index_n,1,:)))'./(phifunct(index_p1,:) - phifunct(index_n,:));
+         xcort(1,2,:) = (-phifunct(index_n,:)'.*squeeze(pos(index_p1,2,:)) + phifunct(index_p1,:)'.*squeeze(pos(index_n,2,:)))'./(phifunct(index_p1,:) - phifunct(index_n,:));
+         xcort(1,3,:) = (-phifunct(index_n,:)'.*squeeze(pos(index_p1,3,:)) + phifunct(index_p1,:)'.*squeeze(pos(index_n,3,:)))'./(phifunct(index_p1,:) - phifunct(index_n,:));
+
+         xcort(2,1,:) = (-phifunct(index_n,:)'.*squeeze(pos(index_p2,1,:)) + phifunct(index_p2,:)'.*squeeze(pos(index_n,1,:)))'./(phifunct(index_p2,:) - phifunct(index_n,:));
+         xcort(2,2,:) = (-phifunct(index_n,:)'.*squeeze(pos(index_p2,2,:)) + phifunct(index_p2,:)'.*squeeze(pos(index_n,2,:)))'./(phifunct(index_p2,:) - phifunct(index_n,:));
+         xcort(2,3,:) = (-phifunct(index_n,:)'.*squeeze(pos(index_p2,3,:)) + phifunct(index_p2,:)'.*squeeze(pos(index_n,3,:)))'./(phifunct(index_p2,:) - phifunct(index_n,:));
+
+         vect_1 = zeros(3,size(phifunct,2));
+         vect_2 = zeros(3,size(phifunct,2));
+         vect_1(1:3,:) = squeeze(xcort(1,:,:) - pos(index_n,:,:));
+         vect_2(1:3,:) = squeeze(xcort(2,:,:) - pos(index_n,:,:));
+         x_h = vect_1(2,:).*vect_2(3,:) - vect_1(3,:).*vect_2(2,:);
+         y_h = vect_1(3,:).*vect_2(1,:) - vect_1(1,:).*vect_2(3,:);
+         z_h = vect_1(1,:).*vect_2(2,:) - vect_1(2,:).*vect_2(1,:);
+         vol_h = 0.5*sqrt(x_h.^2 + y_h.^2 + z_h.^2);
+
+         vectt_1 = zeros(3,size(phifunct,2));
+         vectt_2 = zeros(3,size(phifunct,2));
+         vectt_1(1:3,:) = pos(index_p1,:,:) - pos(index_n,:,:);
+         vectt_2(1:3,:) = pos(index_p2,:,:) - pos(index_n,:,:);
+         x_t = vectt_1(2,:).*vectt_2(3,:) - vectt_1(3,:).*vectt_2(2,:);
+         y_t = vectt_1(3,:).*vectt_2(1,:) - vectt_1(1,:).*vectt_2(3,:);
+         z_t = vectt_1(1,:).*vectt_2(2,:) - vectt_1(2,:).*vectt_2(1,:);
+         vol_t = 0.5*sqrt(x_t.^2 + y_t.^2 + z_t.^2);
+   
+         vol_void = zeros(size(vol_h));
+         vol_void(1,type == 1) = (vol_t(type == 1) - vol_h(type == 1))./vol_t(type == 1); 
+         vol_void(1,type == -1) = vol_h(type == -1)./vol_t(type == -1);  
+
+         else
+
          xcort(1,1,:) = (-phifunct(index_n,:)'.*squeeze(pos(index_p1,1,:)) + phifunct(index_p1,:)'.*squeeze(pos(index_n,1,:)))'./(phifunct(index_p1,:) - phifunct(index_n,:));
          xcort(1,2,:) = (-phifunct(index_n,:)'.*squeeze(pos(index_p1,2,:)) + phifunct(index_p1,:)'.*squeeze(pos(index_n,2,:)))'./(phifunct(index_p1,:) - phifunct(index_n,:));
          
@@ -86,9 +119,10 @@ function [vol_void,vol_t] = compute_vol_void(phifunct,pos,type,index_p1,index_p2
          vectt_2(1:2,:) = pos(index_p2,:,:) - pos(index_n,:,:);
          vol_t = 0.5*abs(vectt_1(1,:).*vectt_2(2,:)-vectt_1(2,:).*vectt_2(1,:));
 
-         
+   
          vol_void = zeros(size(vol_h));
          vol_void(1,type == 1) = (vol_t(type == 1) - vol_h(type == 1))./vol_t(type == 1); 
          vol_void(1,type == -1) = vol_h(type == -1)./vol_t(type == -1);       
  
+         end
 end

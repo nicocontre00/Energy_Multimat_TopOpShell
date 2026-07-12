@@ -1,4 +1,4 @@
-function [ fi, tfi ] = charfunc( p,t,psi)
+function [ fi, tfi ] = charfunc( p,t,psi,pdecoef)
 %charfunc Calculates the characteristic function from the level-set
 %functions
 %auth: Augusto Romero
@@ -18,7 +18,7 @@ fi(:,end+1) = (1 - chi(:,1));
 
 if nargout==2
     for i=1:n
-    [tXi(i,:),~] = integ_exact(t,p,psi(:,i));
+    [tXi(i,:),~] = integ_exact(t,p,psi(:,i),pdecoef);
     end
     tXi = 1 - tXi;
     if n>1

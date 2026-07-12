@@ -92,7 +92,7 @@ end
 
 % shape functional and volume associated to the hold-all domain
 psi_hold_all = ones(length(p),length(matprop.E)-1); psi_hold_all(:,1) = -1;
-[U,F,vol_hold_all] = solve(psi_hold_all, mesh, matprop, pdecoef, bc); 
+[U,F,vol_hold_all] = solve(psi_hold_all, mesh, matprop, pdecoef, bc, signatures); 
 params.energy0 = 0.5 * dot(F,U); % initial energy 
 max_vol = vol_hold_all(1); %volinit = volinit.*gamma; %calculate maximum vol for each fase
 params.max_vol = max_vol; % store maximum volume for each fase

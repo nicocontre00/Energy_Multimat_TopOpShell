@@ -1,4 +1,4 @@
-function [tXi,volume] = integ_exact(t,p,psi)
+function [tXi,volume] = integ_exact(t,p,psi,pdecoef)
 % tXi = pdeintrp(p,t,(psi<0) + gamma*(psi>=0)); 
 dim.nelem=size(t,2);
 dim.nndof=2*size(p,2);
@@ -18,5 +18,5 @@ problembsc.problemtype='2D';
 
 coordinates=p';
 
-[volume,tXi] = cal_omega(psi,dim,element,problembsc,coordinates);
+[volume,tXi] = cal_omega(psi,dim,element,problembsc,coordinates,pdecoef);
 

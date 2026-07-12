@@ -1,11 +1,11 @@
-function [kandes] = andes_element(mesh, pdecoef, matprop, signatures)
+function [kandes] = andes_element(mesh, pdecoef, matprop, signatures,c)
 
 % Extract data from struct 
 
     A=mesh.A;
     h=matprop.h0'; % Ahora es un vector
     nu=matprop.nu0;
-    c=pdecoef.c_andes;
+%   c=pdecoef.c_andes;
     
 %Global coordinates 
       

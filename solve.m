@@ -19,18 +19,18 @@
 % A.A. Novotny      12/2010: code updating.
 %**************************************************************************
 
-function [U,F,vol] = solve(psi, mesh, matprop, pdecoef, bc)
+function [U,F,vol] = solve(psi, mesh, matprop, pdecoef, bc, signatures)
     gamma  = matprop.E./matprop.E(1); % contrast for each material
     p = mesh.p; e = mesh.e; t = mesh.t; area = mesh.area;
     b = pdecoef.b; a = pdecoef.a; f = pdecoef.f; c0 =  pdecoef.c(:,1);
     % element characteristic function: 
-    [ ~,tfi ] = charfunc(p,t,psi);
+    [ ~,tfi ] = charfunc(p,t,psi,pdecoef);
 %     tgamma = pdeintrp(p,t,fi*gamma');  %for P1-projection aproach
     tgamma = gamma*tfi; %for mixed formulation aproach
     c = c0 * tgamma; % effective elasticity tensor 
 %     [K,F] = assempde(b,p,e,t,c,a,f);
-	if size(f,1)==6;	
-		[K]= assemashell(mesh,pdecoef, matprop, signatures);
+	if size(f,1)==6;
+		[K]= assemashell(mesh,pdecoef, matprop, signatures,c);
 		F=sparse(mesh.np*mesh.N,1);		
 		% Apply Dirichlet boundary condition   
         np = mesh.np;

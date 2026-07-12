@@ -1,4 +1,4 @@
-function [ks] = assemashell(mesh,pdecoef, matprop, signatures)%(p_shell,t,C,lambda,localcoordinates,A,long,signatures)
+function [ks] = assemashell(mesh,pdecoef, matprop, signatures,c)%(p_shell,t,C,lambda,localcoordinates,A,long,signatures)
 
 % Take values from mesh struct
 
@@ -49,7 +49,7 @@ function [ks] = assemashell(mesh,pdecoef, matprop, signatures)%(p_shell,t,C,lamb
     lambdazgyl = mesh.lambda.lambdazgyl;
     lambdazgzl = mesh.lambda.lambdazgzl;
 
-    [kdkt] = dkt_element(mesh,pdecoef);
+    [kdkt] = dkt_element(mesh,pdecoef,c);
 
 for i = 1:9
     for j = i:9
@@ -59,7 +59,7 @@ end
 	
 %% ANDES
 	
-    [kandes] = andes_element(mesh,pdecoef,matprop, signatures);
+    [kandes] = andes_element(mesh,pdecoef,matprop, signatures,c);
     
 for i = 1:9
     for j = i:9

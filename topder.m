@@ -19,7 +19,7 @@
 % HISTORY
 % S. Amstutz     06/2009: code implementation.
 % A.A. Novotny   06/2009: code updating.
-% D.E. Campeão   12/2010: code updating.
+% D.E. CampeÃ£o   12/2010: code updating.
 % J-M.C. Farias
 % A.A. Novotny
 %**************************************************************************
@@ -68,7 +68,7 @@ function dt = topder(mesh,U,volume,matprop,psi,params,pdecoef)
         gamma  = matprop.E./E1; 
         % element characteristic function: 1 if psi>0 and gama if psi<=0 
         [~,tfi] = charfunc( p,t,psi);        
-%         tgamma = pdeintrp(p,t,fi*gamma'); %P1 projection method
+%       tgamma = pdeintrp(p,t,fi*gamma'); %P1 projection method
         tgamma = gamma*tfi; %Mixed formulation method
         tE = E1*tgamma; beta = (1+nu)/(1-nu); alpha = (3-nu)/(1+nu);
         %% nominal stress
@@ -120,7 +120,82 @@ function dt = topder(mesh,U,volume,matprop,psi,params,pdecoef)
                 TD{i,j} = coef0.*(coef1.*aa + coef2.*bb);
             end
         end
+	
+	elseif size(pdecoef.f,1) == 6 % Shell
+		%% The Membrane problem
+		TD_m = cell(nmat,nmat);
+		
+		% Material properties
+		E1 = matprop.E(1);
+		gamma  = matprop.E./E1;  
+        [~,tfi] = charfunc(p,t,psi);        
+        tgamma = gamma*tfi;
+		la = matprop.la_andes;
+		mu = matprop.mu_andes;
+		la0 = matprop.la_andes(1);
+		mu0 = matprop.mu_andes(1);		
+ 
+		% Stress
+		id=[1;1;0];
+		e = e_andes(mesh,U,h,signatures); % strain     
+		e(3,:)=1/2.* e(3,:); 
+		divu = e(1,:) + e(2,:);  % e(1,:) = exx ; e(2,:) = eyy ; e(3,:) = exy de ANDES
+		s = la0*id*divu + 2*mu0*e; % Nominal stress                
+		tgamma3 = [tgamma;tgamma;tgamma];
+		s = s.*tgamma3; % Effective stress
+
+		for i = 1:nmat
+            for j = 1:nmat
+				alpha = (la(i)+mu(i))/mu(i);
+				beta = (la(i)+3*mu(i))/(la(i)+mu(i));
+                gamma  = matprop.E(j)/matprop.E(i);
+				coef0 = 0.5*((1-gamma)/(1+gamma*beta)); 
+				coef1 = coef0*(1+beta); 
+				coefx = (1.0-gamma)/(1+gamma*alpha);         
+				coef2 = 0.5*coef0*(alpha-beta)*coefx;
+                TD_m{i,j} = coef1*((s(1,:).*e(1,:)+2*s(3,:).*e(3,:)+s(2,:).*e(2,:))) ...
+				+ coef2*((s(1,:)+s(2,:)).*(e(1,:)+e(2,:)));
+            end
+        end
+		
+		%% The Bending problem
+		TD_b = cell(nmat,nmat);
+
+		% Material properties
+		h0 = matprop.h0;
+		h3 = h0^3;
+		la = matprop.la_dkt;
+		mu = matprop.mu_dkt;
+
+		% Stress
+		tE = E1*tgamma;
+		s = getstress_plate(mesh,U,matprop); % nominal stress
+		s = s.*tgamma3; % effective stress
+
+		%% topological derivative
+		aa = s(1,:).*s(1,:) + 2*s(2,:).*s(2,:) + s(3,:).*s(3,:); % s.s
+		bb = (s(1,:) + s(3,:)).*(s(1,:) + s(3,:)); % (tr(s))^2
+		for i = 1:nmat
+            for j = 1:nmat
+				alpha = (la(i)+mu(i))/mu(i);
+				beta = mu(i)/(3*mu(i)+2*la(i));
+                gamma  = matprop.E(j)/matprop.E(i);
+				coef0 = 12*(1-gamma)./(tE*h3); 
+				coef1 = 4*(alpha.*beta)./(1 + beta.*gamma);
+				coef2 = 1./(1 + alpha*gamma) - 2*(alpha.*beta)./(1 + beta*gamma);
+                TD_b{i,j} = coef0.*(coef1*aa + coef2*bb);				
+            end
+        end
+
+		TD = cell(nmat,nmat);
+		for i = 1:nmat
+			for j = 1:nmat
+				TD{i,j} = TD_m{i,j} + TD_b{i,j};
+			end
+		end
+
     end
+	
     %% include the volume constraint sensitivity          
     coef = volume(1:end-1) ./ voltarget;
     for i = 1:nmat
@@ -149,6 +224,8 @@ function dt = topder(mesh,U,volume,matprop,psi,params,pdecoef)
             end
         end
     end
+	
+	
     %% smoothing of the topological derivative
     
     if nmat==2
