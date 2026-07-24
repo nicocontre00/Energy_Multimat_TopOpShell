@@ -1,12 +1,10 @@
 function s = getstress_plate(mesh,U, matprop)
 %Preliminaries
-
 t = mesh.t;
 nt=size(t,2);
 Ub=U.Ub;
 
 %Local coordinates
-
 x1 =  mesh.localcoordinates.x1;
 x2 =  mesh.localcoordinates.x2;
 x3 =  mesh.localcoordinates.x3;
@@ -48,20 +46,18 @@ r5 = 3*(y31.*y31)./l312;
 
 TwoArea = x2 .*y3;
 
-  %Material Properties
-  
-        h0 = matprop.h0; % Ahora es un vector columna
-        la = matprop.la_dkt; 
-        mu = matprop.mu_dkt;     
-        nu = la/(2*mu+la); 
-        E0 = 2*mu*(1+nu); 
+%Material Properties
+h0 = matprop.h0;
+la = matprop.la_dkt(1); 
+mu = matprop.mu_dkt(1);     
+nu = matprop.nu0; 
+E0 = matprop.E(1); 
 
-        %Material Properties    
-        E1 = E0.*h0.*h0.*h0./(12*(1-nu*nu)); % Ahora esto es un vector columna
-        E2 = nu.*E1; % Todos los E que sigen tambien son vectores columnas
-        E3 = E1;
-        E4 = E1.*(1.-nu)./2;
-
+%Material Properties    
+E1 = E0.*h0.*h0.*h0./(12*(1-nu*nu)); % Ahora esto es un vector columna
+E2 = nu.*E1; 
+E3 = E1;
+E4 = E1.*(1.-nu)./2;
 
 %Elements of stiffness matrix
 alfa11 = y3.*p6;
@@ -162,17 +158,17 @@ Cos=1;
 Sen=0;
 
 StrL(1,:) = (1/3./TwoArea).*((((alfa11 + alfa21 + alfa31).*U1 + (alfa14 + alfa24 + alfa34).*U4 + alfa37.*U7) ...
-    + (alfa32.*U2 + (alfa13 + alfa23 + alfa33).*U3 + alfa35.*U5 + (alfa16 + alfa26 + alfa36).*U6 + alfa38.*U8 + alfa39.*U9).*Cos - ((alfa13 + alfa23 + alfa33).*U2 - alfa32.*U3 + (alfa16 + alfa26 + alfa36).*U5 - alfa35.*U6 + alfa39.*U8 - alfa38.*U9).*Sen).*E1 ...
-    + (((alfa41 + alfa61).*U1 + (alfa54 + alfa64).*U4 + (alfa47 + alfa57 + alfa67).*U7) ...
-    + ((alfa42 + alfa52 + alfa62).*U2 + (alfa43 + alfa63).*U3 + (alfa45 + alfa55 + alfa65).*U5 + (alfa56 + alfa66).*U6 + (alfa48 + alfa58 + alfa68).*U8 + (alfa49 + alfa59 + alfa69).*U9).*Cos - ((alfa43 + alfa63).*U2 - (alfa42 + alfa52 + alfa62).*U3 + (alfa56 + alfa66).*U5 - (alfa45 + alfa55 + alfa65).*U6 + (alfa49 + alfa59 + alfa69).*U8 - (alfa48 + alfa58 + alfa68).*U9).*Sen).*E2);
+            + (alfa32.*U2 + (alfa13 + alfa23 + alfa33).*U3 + alfa35.*U5 + (alfa16 + alfa26 + alfa36).*U6 + alfa38.*U8 + alfa39.*U9).*Cos - ((alfa13 + alfa23 + alfa33).*U2 - alfa32.*U3 + (alfa16 + alfa26 + alfa36).*U5 - alfa35.*U6 + alfa39.*U8 - alfa38.*U9).*Sen).*E1 ...
+            + (((alfa41 + alfa61).*U1 + (alfa54 + alfa64).*U4 + (alfa47 + alfa57 + alfa67).*U7) ...
+            + ((alfa42 + alfa52 + alfa62).*U2 + (alfa43 + alfa63).*U3 + (alfa45 + alfa55 + alfa65).*U5 + (alfa56 + alfa66).*U6 + (alfa48 + alfa58 + alfa68).*U8 + (alfa49 + alfa59 + alfa69).*U9).*Cos - ((alfa43 + alfa63).*U2 - (alfa42 + alfa52 + alfa62).*U3 + (alfa56 + alfa66).*U5 - (alfa45 + alfa55 + alfa65).*U6 + (alfa49 + alfa59 + alfa69).*U8 - (alfa48 + alfa58 + alfa68).*U9).*Sen).*E2);
 
 StrL(2,:) = (1/3./TwoArea).*((((alfa11 + alfa21 + alfa31).*U1 + (alfa14 + alfa24 + alfa34).*U4 + alfa37.*U7) ...
-    + (alfa32.*U2 + (alfa13 + alfa23 + alfa33).*U3 + alfa35.*U5 + (alfa16 + alfa26 + alfa36).*U6 + alfa38.*U8 + alfa39.*U9).*Cos - ((alfa13 + alfa23 + alfa33).*U2 - alfa32.*U3 + (alfa16 + alfa26 +alfa36).*U5 - alfa35.*U6 + alfa39.*U8 - alfa38.*U9).*Sen).*E2 ...
-    + (((alfa41 + alfa61).*U1 + (alfa54 + alfa64).*U4 + (alfa47 + alfa57 + alfa67).*U7) ...
-    + ((alfa42 + alfa52 + alfa62).*U2 + (alfa43 + alfa63).*U3 + (alfa45 + alfa55 + alfa65).*U5 + (alfa56 + alfa66).*U6 + (alfa48 + alfa58 + alfa68).*U8 + (alfa49 + alfa59 + alfa69).*U9).*Cos - ((alfa43 + alfa63).*U2 - (alfa42 + alfa52 + alfa62).*U3 + (alfa56 + alfa66).*U5 - (alfa45 + alfa55 + alfa65).*U6 + (alfa49 + alfa59 + alfa69).*U8 - (alfa48 + alfa58 + alfa68).*U9).*Sen).*E3);
+            + (alfa32.*U2 + (alfa13 + alfa23 + alfa33).*U3 + alfa35.*U5 + (alfa16 + alfa26 + alfa36).*U6 + alfa38.*U8 + alfa39.*U9).*Cos - ((alfa13 + alfa23 + alfa33).*U2 - alfa32.*U3 + (alfa16 + alfa26 +alfa36).*U5 - alfa35.*U6 + alfa39.*U8 - alfa38.*U9).*Sen).*E2 ...
+            + (((alfa41 + alfa61).*U1 + (alfa54 + alfa64).*U4 + (alfa47 + alfa57 + alfa67).*U7) ...
+            + ((alfa42 + alfa52 + alfa62).*U2 + (alfa43 + alfa63).*U3 + (alfa45 + alfa55 + alfa65).*U5 + (alfa56 + alfa66).*U6 + (alfa48 + alfa58 + alfa68).*U8 + (alfa49 + alfa59 + alfa69).*U9).*Cos - ((alfa43 + alfa63).*U2 - (alfa42 + alfa52 + alfa62).*U3 + (alfa56 + alfa66).*U5 - (alfa45 + alfa55 + alfa65).*U6 + (alfa49 + alfa59 + alfa69).*U8 - (alfa48 + alfa58 + alfa68).*U9).*Sen).*E3);
 
 StrL(3,:) = (1/3./TwoArea).*((((alfa71 + alfa81 + alfa91).*U1 + (alfa74 + alfa84 + alfa94).*U4 + (alfa77 + alfa87 + alfa97).*U7) ...
-    + ((alfa72 + alfa82 + alfa92).*U2 + (alfa73 + alfa83 + alfa93).*U3 + (alfa75 + alfa85 + alfa95).*U5 + (alfa76 + alfa86 + alfa96).*U6 + (alfa78 + alfa88 + alfa98).*U8 + (alfa79 + alfa89 + alfa99).*U9).*Cos - ((alfa73 + alfa83 + alfa93).*U2 - (alfa72 + alfa82 + alfa92).*U3 + (alfa76 + alfa86 + alfa96).*U5 - (alfa75 + alfa85 + alfa95).*U6 + (alfa79 + alfa89 + alfa99).*U8 - (alfa78 + alfa88 + alfa98).*U9).*Sen).*E4);
+            + ((alfa72 + alfa82 + alfa92).*U2 + (alfa73 + alfa83 + alfa93).*U3 + (alfa75 + alfa85 + alfa95).*U5 + (alfa76 + alfa86 + alfa96).*U6 + (alfa78 + alfa88 + alfa98).*U8 + (alfa79 + alfa89 + alfa99).*U9).*Cos - ((alfa73 + alfa83 + alfa93).*U2 - (alfa72 + alfa82 + alfa92).*U3 + (alfa76 + alfa86 + alfa96).*U5 - (alfa75 + alfa85 + alfa95).*U6 + (alfa79 + alfa89 + alfa99).*U8 - (alfa78 + alfa88 + alfa98).*U9).*Sen).*E4);
 
 % Rotaciona Deformacao e tensao
 cc = Cos.*Cos;

@@ -22,8 +22,10 @@
 % A. Romero  6/2018: code updating multimaterial.
 %**************************************************************************
 
-function [sf,Epot] = shfunc(F,U,volume,params)
-
+function [sf,Epot] = shfunc(F,U,volume,params,pdecoef)
+    if size(pdecoef.f,1)==6;
+    U = U.U;
+    end
     penalty = params.penalty; max_vol = params.max_vol;  auglag= params.auglag;
     volfrac = params.volfrac; voltarget = max_vol.*volfrac;
     sf = 0.5*dot(F,U) / params.energy0 ; %normalizing compliance

@@ -24,7 +24,7 @@
 % A.A. Novotny
 %**************************************************************************
 
-function dt = topder(mesh,U,volume,matprop,psi,params,pdecoef)
+function dt = topder(mesh,U,volume,matprop,psi,params,pdecoef,signatures)
 
     p = mesh.p; t = mesh.t;
     penalization = params.penalization; penalty = params.penalty;
@@ -67,7 +67,7 @@ function dt = topder(mesh,U,volume,matprop,psi,params,pdecoef)
         la0 = 2.*mu0.*la0./(la0+2.*mu0); % plane stress
         gamma  = matprop.E./E1; 
         % element characteristic function: 1 if psi>0 and gama if psi<=0 
-        [~,tfi] = charfunc( p,t,psi);        
+        [~,tfi] = charfunc( p,t,psi,pdecoef);        
 %       tgamma = pdeintrp(p,t,fi*gamma'); %P1 projection method
         tgamma = gamma*tfi; %Mixed formulation method
         tE = E1*tgamma; beta = (1+nu)/(1-nu); alpha = (3-nu)/(1+nu);
@@ -99,7 +99,7 @@ function dt = topder(mesh,U,volume,matprop,psi,params,pdecoef)
         E1 = matprop.E(1); nu = matprop.nu;
         gamma = matprop.E./matprop.E(1); % contrast 
         % element characteristic function: 1 if psi>0 and gama if psi<=0
-        [~,tfi] = charfunc( p,t,psi);  
+        [~,tfi] = charfunc( p,t,psi,pdecoef);  
         tgamma = gamma*tfi; % Mixed formulation method 
         tE = E1*tgamma; alpha = (1+nu)/(1-nu); beta = (1-nu)/(3+nu);
         %% nominal stress
@@ -128,13 +128,15 @@ function dt = topder(mesh,U,volume,matprop,psi,params,pdecoef)
 		% Material properties
 		E1 = matprop.E(1);
 		gamma  = matprop.E./E1;  
-        [~,tfi] = charfunc(p,t,psi);        
+        [~,tfi] = charfunc(p,t,psi,pdecoef);        
         tgamma = gamma*tfi;
 		la = matprop.la_andes;
 		mu = matprop.mu_andes;
 		la0 = matprop.la_andes(1);
 		mu0 = matprop.mu_andes(1);		
- 
+        h = matprop.h0;
+        nu = matprop.nu0;
+
 		% Stress
 		id=[1;1;0];
 		e = e_andes(mesh,U,h,signatures); % strain     
@@ -143,11 +145,10 @@ function dt = topder(mesh,U,volume,matprop,psi,params,pdecoef)
 		s = la0*id*divu + 2*mu0*e; % Nominal stress                
 		tgamma3 = [tgamma;tgamma;tgamma];
 		s = s.*tgamma3; % Effective stress
+        beta = (1+nu)/(1-nu); alpha = (3-nu)/(1+nu);
 
 		for i = 1:nmat
             for j = 1:nmat
-				alpha = (la(i)+mu(i))/mu(i);
-				beta = (la(i)+3*mu(i))/(la(i)+mu(i));
                 gamma  = matprop.E(j)/matprop.E(i);
 				coef0 = 0.5*((1-gamma)/(1+gamma*beta)); 
 				coef1 = coef0*(1+beta); 
@@ -171,14 +172,13 @@ function dt = topder(mesh,U,volume,matprop,psi,params,pdecoef)
 		tE = E1*tgamma;
 		s = getstress_plate(mesh,U,matprop); % nominal stress
 		s = s.*tgamma3; % effective stress
+        alpha = (1+nu)/(1-nu); beta = (1-nu)/(3+nu);
 
 		%% topological derivative
 		aa = s(1,:).*s(1,:) + 2*s(2,:).*s(2,:) + s(3,:).*s(3,:); % s.s
 		bb = (s(1,:) + s(3,:)).*(s(1,:) + s(3,:)); % (tr(s))^2
 		for i = 1:nmat
             for j = 1:nmat
-				alpha = (la(i)+mu(i))/mu(i);
-				beta = mu(i)/(3*mu(i)+2*la(i));
                 gamma  = matprop.E(j)/matprop.E(i);
 				coef0 = 12*(1-gamma)./(tE*h3); 
 				coef1 = 4*(alpha.*beta)./(1 + beta.*gamma);
@@ -229,7 +229,7 @@ function dt = topder(mesh,U,volume,matprop,psi,params,pdecoef)
     %% smoothing of the topological derivative
     
     if nmat==2
-        [~,tfi] = charfunc( p,t,psi); % get characteristic function - Mixed formulation method
+        [~,tfi] = charfunc( p,t,psi,pdecoef); % get characteristic function - Mixed formulation method
         %     fi = (pdeintrp(p,t,fi)).'; % interpolation at gauss point - P1 projection method
        
         % compute g for each level set g: g = -DT (bulk) and g = DT (inclusion)
@@ -238,8 +238,8 @@ function dt = topder(mesh,U,volume,matprop,psi,params,pdecoef)
         dt = - tfi(1,:).*TD{1,end} + tfi(end,:).*TD{end,1};
 
     elseif nmat==3
-        [~,tfi] = charfunc( p,t,psi);  % get characteristic function - Mixed formulation method
-        [tXi2,~] = integ_exact(t,p,psi(:,2)); chi2 = (1 - tXi2); %- Mixed formulation method
+        [~,tfi] = charfunc( p,t,psi,pdecoef);  % get characteristic function - Mixed formulation method
+        [tXi2,~] = integ_exact(t,p,psi(:,2),pdecoef); chi2 = (1 - tXi2); %- Mixed formulation method
         %     fi = (pdeintrp(p,t,fi)).'; % interpolation at gauss point - P1 projection method
         %     chi2 = (pdeintrp(p,t,(psi(:,2)<0))).'; %- P1 projection method
         
@@ -250,9 +250,9 @@ function dt = topder(mesh,U,volume,matprop,psi,params,pdecoef)
         dt(2,:) = tfi(1,:).*TD{1,2} - tfi(2,:).*TD{2,1};
         
     elseif nmat==4
-        [~,tfi] = charfunc( p,t,psi); % get characteristic function - Mixed formulation method
-        [tXi2,~] = integ_exact(t,p,psi(:,2)); chi2 = (1 - tXi2); %- Mixed formulation method
-        [tXi3,~] = integ_exact(t,p,psi(:,3)); chi3 = (1 - tXi3); %- Mixed formulation method
+        [~,tfi] = charfunc( p,t,psi,pdecoef); % get characteristic function - Mixed formulation method
+        [tXi2,~] = integ_exact(t,p,psi(:,2),pdecoef); chi2 = (1 - tXi2); %- Mixed formulation method
+        [tXi3,~] = integ_exact(t,p,psi(:,3),pdecoef); chi3 = (1 - tXi3); %- Mixed formulation method
         %     fi = (pdeintrp(p,t,fi)).'; % interpolation at gauss point - P1 projection method
         %     chi2 = (pdeintrp(p,t,(psi(:,2)<0))).'; %- P1 projection method
         

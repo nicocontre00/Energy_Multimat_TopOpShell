@@ -38,12 +38,15 @@ function [U,F,vol] = solve(psi, mesh, matprop, pdecoef, bc, signatures)
         K(eq,:) = 0.0; K(:,eq) = 0.0; K(eq,eq) = speye(neq);
         % Apply Neumann boundary condition
         eq = bc.pNeu(:,1) + (bc.pNeu(:,2)-1)*np; 
-        F(eq) = F(eq) + bc.pNeu(:,3);   
+        F(eq) = F(eq) + bc.pNeu(:,3); 
+        U = K \ F;  % solve linear system
+        [U] = disp_filter(mesh, U);
 	else
 	    [K,~,F] = assema(p,t,c,a,f);
 		[K,F] = pdeupdate(K,F,bc,mesh);
+        U = K \ F;  % solve linear system
 	end
-    U = K \ F;  % solve linear system
+    
 %     vol  = area*tchi';  %calculate volume assigned to each material including void -- P1 projection aproach
     vol  = area*tfi'; %calculate volume assigned to each material including void -- mixed formulation aproach
 end

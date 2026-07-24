@@ -52,7 +52,8 @@ clear all; close all; clc
 %     [mesh, pdecoef, matprop, params, bc, psi] = claDKT2_3m;
 %     [mesh, pdecoef, matprop, params, bc, psi] = claDKT2_4m;
 cd('examples\shell')
-    [mesh, pdecoef, matprop, params, bc, psi, signatures] = grua;
+%     [mesh, pdecoef, matprop, params, bc, psi, signatures] = grua_2m;
+    [mesh, pdecoef, matprop, params, bc, psi, signatures] = grua_3m;
 cd ..\..
 filename = 'wall_2m';
 %Configure default settings for plot functions
@@ -92,7 +93,16 @@ end
 
 % shape functional and volume associated to the hold-all domain
 psi_hold_all = ones(length(p),length(matprop.E)-1); psi_hold_all(:,1) = -1;
+
+if size(f,1)==6;
+else
+signatures = 0;
+end
+
 [U,F,vol_hold_all] = solve(psi_hold_all, mesh, matprop, pdecoef, bc, signatures); 
+if size(f,1)==6;
+U = U.U;
+end
 params.energy0 = 0.5 * dot(F,U); % initial energy 
 max_vol = vol_hold_all(1); %volinit = volinit.*gamma; %calculate maximum vol for each fase
 params.max_vol = max_vol; % store maximum volume for each fase
@@ -107,22 +117,25 @@ end
 [~,unitM,~] = assema(p,t,0,1,0); % mass matrix of unity density
 psi = psi./normL2( unitM,psi ); % level-set function nomalization 
 
+if size(f,1)==6;
+else
 % plot hold-all domain
 figure(2); clf;
 set(2,'WindowStyle','docked');
 pdeplot(p,e,t,'xydata',ones(size(p,2),1),'xystyle','flat','colormap','gray',...
               'xygrid','off','colorbar','off'); axis image; axis off; 
+end
 k = 1; iter = 0;
 gsf = []; gEpot = []; gth = []; gvol = [];
 option = 'null';
 
 while not(strcmp(option,'s'))
     %-----------Initial values-----------%
-    [U,F,volume] = solve(psi, mesh, matprop, pdecoef, bc);
-    [sf,Epot] = shfunc(F,U,volume,params);
+    [U,F,volume] = solve(psi, mesh, matprop, pdecoef, bc, signatures);
+    [sf,Epot] = shfunc(F,U,volume,params,pdecoef);
     
     % compute function g: g = -DT (bulk) and g = DT (inclusion)
-    dt = topder(mesh,U,volume,matprop,psi,params,pdecoef);
+    dt = topder(mesh,U,volume,matprop,psi,params,pdecoef,signatures);
     dt = dt/normL2(unitM,dt);  % g function normalization
     
     dt(phold,:) = psi(phold,:); % freeze dt function
@@ -138,11 +151,11 @@ while not(strcmp(option,'s'))
     while and( or(any(ic),theta > stop) , k/2 > kmin)
         
         iter = iter + 1;
-        [U,F,volume] = solve(psi, mesh, matprop, pdecoef, bc);
-        [sf,Epot] = shfunc(F,U,volume,params);
+        [U,F,volume] = solve(psi, mesh, matprop, pdecoef, bc, signatures);
+        [sf,Epot] = shfunc(F,U,volume,params,pdecoef);
         
         % compute function g: g = -DT (bulk) and g = DT (inclusion)
-        dt = topder(mesh,U,volume,matprop,psi,params,pdecoef);
+        dt = topder(mesh,U,volume,matprop,psi,params,pdecoef,signatures);
         dt = dt./normL2(unitM,dt);  % g function normalization
         
         dt(phold,:) = psi(phold,:); % freeze dt function
@@ -161,14 +174,14 @@ while not(strcmp(option,'s'))
             % update level-set function
             psi(pfree,:)  = (sin((1-k)*theta)*psiold(pfree,:)...
                 +  sin(k*theta)*dt(pfree,:))./sin(theta);
-            [U,F,volume] = solve(psi,mesh,matprop,pdecoef,bc);
-            [sf,Epot] = shfunc(F,U,volume,params);
+            [U,F,volume] = solve(psi,mesh,matprop,pdecoef,bc,signatures);
+            [sf,Epot] = shfunc(F,U,volume,params,pdecoef);
             k = k / 2;
         end
         psi = psi/normL2(unitM,psi);
         k = k * 2;
         
-        [fi,~] = charfunc( p,t,psi); %calculate characteristic function for plot
+        [fi,~] = charfunc( p,t,psi,pdecoef); %calculate characteristic function for plot
         
         gsf  = [gsf,sf];
         gEpot = [gEpot,Epot];
@@ -185,6 +198,20 @@ while not(strcmp(option,'s'))
         
         facecolor = [186 212 244]/255;
         linecolor = [0 62 102]/255;
+
+
+        if size(f,1)==6;
+        colors = [0 0 0;1 0 0; 0 0 1;0 1 0];
+        colors = colors(1:size(fi,2),:);
+        colors(end,:) = [1 1 1];
+        coef = 1:size(fi,2);
+        fi_shell = fi*coef';
+        figure(3); clf; set(3,'WindowStyle','docked');
+        trisurf(t(1:3,:)',p(1,:),p(2,:),p(3,:),fi_shell,'FaceColor','interp')
+        colormap(colors);
+        caxis([1 size(fi,2)])
+        axis equal
+        else
         if iter == 1 
             figTopology = figure(3); 
             set(3,'WindowStyle','docked');
@@ -192,7 +219,9 @@ while not(strcmp(option,'s'))
         end
         multimat_plot( p,e,t,fi,axTopology);
         drawnow
-%             FRAMES(iter) = getframe(gcf);
+        end
+
+%       FRAMES(iter) = getframe(gcf);
         figure(4); clf;hold on, plot(gsf,'k-','LineWidth',1.2); %title('Shape Function');
         ymax = max(max(gsf),max(gEpot));
         yyaxis left; ylabel('Shape Function'), ylim([0 ymax])
@@ -210,6 +239,7 @@ while not(strcmp(option,'s'))
         title('Volume'); legend(leyenda),grid minor, xlim([0 iter]), ylim([-5 105])    
         set(6,'WindowStyle','docked');
         
+
         %Update augmented lagrangian parameters
         difvol = volume(1:end-1)-voltarget;
         ic = (abs(difvol) > volstop); %index control
