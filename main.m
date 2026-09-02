@@ -25,6 +25,9 @@
 %**************************************************************************
 
 clear all; close all; clc
+
+mesh = []; psi=[];
+
 % Load problem data
 % cd('examples\elas')
 %     [mesh, pdecoef, matprop, params, bc, psi] = bridge;
@@ -53,7 +56,11 @@ clear all; close all; clc
 %     [mesh, pdecoef, matprop, params, bc, psi] = claDKT2_4m;
 cd('examples\shell')
 %     [mesh, pdecoef, matprop, params, bc, psi, signatures] = grua_2m;
-    [mesh, pdecoef, matprop, params, bc, psi, signatures] = grua_3m;
+%     [mesh, pdecoef, matprop, params, bc, psi, signatures] = grua_3m;
+%     [mesh, pdecoef, matprop, params, bc, psi, signatures] = shviga2x1_2m(mesh, psi);
+    [mesh, pdecoef, matprop, params, bc, psi, signatures] = shviga2x1_3m(mesh, psi);
+%     [mesh, pdecoef, matprop, params, bc, psi, signatures] = shcog_2m(mesh, psi);
+%     [mesh, pdecoef, matprop, params, bc, psi, signatures] = shcog_3m(mesh, psi);
 cd ..\..
 filename = 'wall_2m';
 %Configure default settings for plot functions
@@ -68,6 +75,7 @@ p = mesh.p; e = mesh.e; t = mesh.t; g = mesh.g;
 % topology optimization parameters
 stop = params.stop;  kmin = params.kmin; penalization = params.penalization; 
 volfrac = params.volfrac; auglag = params.auglag; voleps = params.voleps;
+
 % freeze nodes
 phold = [];
 for i = 1:size(mesh.ghold,1)
@@ -77,7 +85,7 @@ pfree = setdiff(1:size(p,2),phold); % free nodes
 
 f = pdecoef.f;
 if size(f,1)==6;
-    figure('Name','Geometria'); clf; set(1,'WindowStyle','docked'); 
+    figure(1); clf; set(1,'WindowStyle','docked'); 
     trisurf(t(1:3,:)',p(1,:),p(2,:),p(3,:),'FaceColor',[0.5 0.5 0.5]); 
     axis equal
 else
@@ -139,7 +147,7 @@ while not(strcmp(option,'s'))
     dt = dt/normL2(unitM,dt);  % g function normalization
     
     dt(phold,:) = psi(phold,:); % freeze dt function
-    
+
     for i = 1 : length(matprop.E)-1
         cosin(i) = psi(:,i)'*unitM*dt(:,i);
     end
@@ -207,7 +215,7 @@ while not(strcmp(option,'s'))
         coef = 1:size(fi,2);
         fi_shell = fi*coef';
         figure(3); clf; set(3,'WindowStyle','docked');
-        trisurf(t(1:3,:)',p(1,:),p(2,:),p(3,:),fi_shell,'FaceColor','interp')
+        trisurf(t(1:3,:)',p(1,:),p(2,:),p(3,:),fi_shell,'EdgeColor','none','FaceColor','interp')
         colormap(colors);
         caxis([1 size(fi,2)])
         axis equal
@@ -257,60 +265,116 @@ while not(strcmp(option,'s'))
             end
         end
     end
-        
+         
     option = 'null';
     while and(not(strcmp(option,'r')), and(not(strcmp(option,'s')), not(strcmp(option,'c'))))
         option = input('\n -> type "r" to remesh or "s" to stop : ', 's');
     end
     if (option == 'r')
-        for i = 1:(strcmp(mesh.remesh,'longest')*2 + strcmp(mesh.remesh,'regular'))
-            [p,e,t,psi] = refinemesh(g,p,e,t,psi,mesh.remesh);
-            mesh.p = p; mesh.e = e; mesh.t = t;
-        end
         
-        % update mesh parameters
-        figure(1); clf;
-        set(1,'WindowStyle','docked');
-        pdemesh(p,e,t); axis image; axis off;
-        [~,unitM,~] = assema(p,t,0,1,0);
-        area = pdetrg(p,t); mesh.area = area;
-        k = 1;
-        
-        %Update bc
-        ldir = bc.Neu.ldir;
-        ldof = bc.Neu.ldof;
-        lval = bc.Neu.lval;
-        pbc = bouncon(p,e,t,ldir,ldof,lval);
-        pbc = unique(pbc,'rows'); %just for symetry_cog_2 eliminate otherwise
-        bc.pNeu = pbc;
-        
-        ldir = bc.Dir.ldir;
-        ldof = bc.Dir.ldof;
-        lval = bc.Dir.lval;
-        pbc = bouncon(p,e,t,ldir,ldof,lval);
-        pbc = unique(pbc,'rows'); %just for symetry_cog_2 eliminate otherwise
-        bc.pDir = pbc;
-        
-        % freeze groups
-        phold = [];
-        for i = 1:size(mesh.ghold,1)
-            phold = cat(1,phold,unique(t(1:3,t(4,:)==mesh.ghold(i)))); %nodes to block
-        end
-        pfree = setdiff(1:size(p,2),phold);
-        option = 'null';
-        
-        % shape functional and volume associated to the hold-all domain
-        psi_hold_all = ones(length(p),length(matprop.E)-1); psi_hold_all(:,1) = -1;
-        [U,F,vol_hold_all] = solve(psi_hold_all, mesh, matprop, pdecoef, bc);
-        params.energy0 = 0.5 * dot(F,U); % initial energy
-        max_vol = vol_hold_all(1);
-        params.volinit = max_vol; % store maximum volume for each fase
-        voltarget = max_vol.*volfrac;
-        
-        % stop criterion over the volume constraint
-        volstop = voleps.*max_vol;
-        if penalization == 1
-            volstop = max_vol;
+        if size(f,1)==6;
+
+            cd('examples\shell')
+            %     [mesh, pdecoef, matprop, params, bc, psi, signatures] = shviga2x1_2m(mesh,psi);
+                [mesh, pdecoef, matprop, params, bc, psi, signatures] = shviga2x1_3m(mesh, psi);
+%                 [mesh, pdecoef, matprop, params, bc, psi, signatures] = shcog_2m(mesh, psi);
+%                 [mesh, pdecoef, matprop, params, bc, psi, signatures] = shcog_3m(mesh, psi);
+            cd ..\..
+
+            % update data            
+            % mesh and geometry  parameters
+            p = mesh.p; t = mesh.t;
+            area = mesh.A; np = mesh.np; vol0 = sum(area);
+            
+            % freeze nodes
+            phold = [];
+            for i = 1:size(mesh.ghold,1)
+                phold = cat(1,phold,unique(t(1:3,t(4,:)==mesh.ghold(i))));
+            end
+            pfree = setdiff(1:size(p,2),phold); % free nodes
+
+            figure(1); clf; set(1,'WindowStyle','docked'); 
+            trisurf(t(1:3,:)',p(1,:),p(2,:),p(3,:),'FaceColor',[0.5 0.5 0.5]); 
+            axis equal
+
+            % topology optimization parameters
+	
+            [~,unitM,~] = assema(p,t,0,1,0); % mass matrix of unity density
+            psi = psi./normL2( unitM,psi ); % level-set function nomalization  
+
+            % shape functional and volume associated to the hold-all domain
+            psi_hold_all = ones(length(p),length(matprop.E)-1); psi_hold_all(:,1) = -1;
+            [U,F,vol_hold_all] = solve(psi_hold_all, mesh, matprop, pdecoef, bc, signatures);
+            if size(f,1)==6
+                U = U.U;
+            end
+            params.energy0 = 0.5 * dot(F,U); % initial energy
+            
+            max_vol = vol_hold_all(1);
+            params.volinit = max_vol; % store maximum volume for each fase
+            voltarget = max_vol.*volfrac;
+            params.max_vol = max_vol;
+
+            k = 1;
+            
+            option = 'null';
+
+            % stop criterion over the volume constraint
+            volstop = voleps.*max_vol;
+            if penalization == 1
+                volstop = max_vol;
+            end
+        else
+
+            for i = 1:(strcmp(mesh.remesh,'longest')*2 + strcmp(mesh.remesh,'regular'))
+                [p,e,t,psi] = refinemesh(g,p,e,t,psi,mesh.remesh);
+                mesh.p = p; mesh.e = e; mesh.t = t;
+            end
+            
+            % update mesh parameters
+            figure(1); clf;
+            set(1,'WindowStyle','docked');
+            pdemesh(p,e,t); axis image; axis off;
+            [~,unitM,~] = assema(p,t,0,1,0);
+            area = pdetrg(p,t); mesh.area = area;
+            k = 1;
+            
+            %Update bc
+            ldir = bc.Neu.ldir;
+            ldof = bc.Neu.ldof;
+            lval = bc.Neu.lval;
+            pbc = bouncon(p,e,t,ldir,ldof,lval);
+            pbc = unique(pbc,'rows'); %just for symetry_cog_2 eliminate otherwise
+            bc.pNeu = pbc;
+            
+            ldir = bc.Dir.ldir;
+            ldof = bc.Dir.ldof;
+            lval = bc.Dir.lval;
+            pbc = bouncon(p,e,t,ldir,ldof,lval);
+            pbc = unique(pbc,'rows'); %just for symetry_cog_2 eliminate otherwise
+            bc.pDir = pbc;
+            
+            % freeze groups
+            phold = [];
+            for i = 1:size(mesh.ghold,1)
+                phold = cat(1,phold,unique(t(1:3,t(4,:)==mesh.ghold(i)))); %nodes to block
+            end
+            pfree = setdiff(1:size(p,2),phold);
+            option = 'null';
+            
+            % shape functional and volume associated to the hold-all domain
+            psi_hold_all = ones(length(p),length(matprop.E)-1); psi_hold_all(:,1) = -1;
+            [U,F,vol_hold_all] = solve(psi_hold_all, mesh, matprop, pdecoef, bc, signatures);
+            params.energy0 = 0.5 * dot(F,U); % initial energy
+            max_vol = vol_hold_all(1);
+            params.volinit = max_vol; % store maximum volume for each fase
+            voltarget = max_vol.*volfrac;
+            
+            % stop criterion over the volume constraint
+            volstop = voleps.*max_vol;
+            if penalization == 1
+                volstop = max_vol;
+            end
         end
     end    
 end

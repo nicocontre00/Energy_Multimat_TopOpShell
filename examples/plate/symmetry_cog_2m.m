@@ -23,14 +23,14 @@ function [mesh, pdecoef, matprop, params, bc, psi] = symmetry_cog_2m
     % (2) exact quadratic
     % (3) augmented-lagrangian
     params.penalization = 3;
-  
+    
     % penalty parameter
     params.penalty = [0.0];   % method 1,2 and 3
     params.volfrac = [0.6];   % method 2 and 3
     params.voleps  = [0.01];  % method 2 and 3
     params.auglag  = [5.01];   % method 3
     params.epsilon = 0.01;  % method 3      
-   
+    
     %% mesh generation  
     n = 20;
     [p,e,t] = poimesh(g,n,n); t(4,:) = 1;
