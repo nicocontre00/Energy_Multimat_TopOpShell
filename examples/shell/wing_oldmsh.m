@@ -164120,3 +164120,5 @@ msh.bottomface0 = [
 msh.sideface0 = [
 2    
 ];
+
+msh.POS_old = msh.POS_old*1000;

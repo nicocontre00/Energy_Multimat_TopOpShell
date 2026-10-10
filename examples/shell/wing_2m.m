@@ -75,9 +75,9 @@ params.penalization = 3;
 % penalty parameter
 
 params.penalty = [0.0];   % method 1,2 and 3	% La penalizacion en este caso es solo un valor inicial
-params.volfrac = [0.95];   % method 2 and 3		% Porcentaje del volumen final que buscamos (En este ejemplo es 20%)
+params.volfrac = [0.94];   % method 2 and 3		% Porcentaje del volumen final que buscamos (En este ejemplo es 20%)
 params.voleps  = [0.01];  % method 2 and 3		% Tolerancia que se puede admitir en el volumen final 0.01
-params.auglag  = [0.09];   % method 3			% Coeficiente de actualizacion del multiplicador de Lagrange (penalty aumenta mas o menos rapido) (Profe recomendo un 0.1)
+params.auglag  = [0.05];   % method 3			% Coeficiente de actualizacion del multiplicador de Lagrange (penalty aumenta mas o menos rapido) (Profe recomendo un 0.1)
 params.epsilon = 0.01;  % method 3 
 
 %% boundary conditions
@@ -86,7 +86,7 @@ x = mesh.p(1,:); y = mesh.p(2,:); z = mesh.p(3,:);
 eps = 0.01*sqrt(min(mesh.A));
 
 % Dirichlet
-cz = 0.3116122402*1000;   
+cz = 0.3116125234*1000;   
 node = find(z < cz + eps); node = node';
 npb = size(node,1); node = [node;node;node;node;node;node];
 dof = [ones(npb,1);2*ones(npb,1);3*ones(npb,1);4*ones(npb,1);5*ones(npb,1);6*ones(npb,1)];

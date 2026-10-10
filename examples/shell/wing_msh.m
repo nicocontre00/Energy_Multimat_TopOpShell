@@ -155521,3 +155521,5 @@ msh.sideface = [
 184 
 190
 ]; % Cara lateral
+
+msh.POS = msh.POS*1000;
