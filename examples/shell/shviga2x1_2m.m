@@ -38,7 +38,7 @@ matprop.nu0 = nu;
 matprop.h0 = h;
 matprop.E = E;
 matprop.E0 = E;
-    
+
 % DKT (Discrete Kirchhoff Triangle)
 
 la = nu.*E/((1+nu)*(1-2*nu)); 
@@ -47,12 +47,12 @@ la = 2.*mu.*la./(la+2.*mu); % plane stress
 
 matprop.la_dkt = la; 
 matprop.mu_dkt = mu;
-    
+
 % ANDES (Assumed natural deviatoric strain)
-	
+
 matprop.la_andes = ((nu.*E.^2)./((1+nu).^2).*(1-2.*nu))./(((nu.*E)./(1+nu).*(1-2.*nu))+(E./(1+nu)));
 matprop.mu_andes = E./(2.*(1+nu));
-    
+
 % pde coefficients
 [pdecoef] = cprop(matprop);    
     
@@ -87,13 +87,13 @@ x = mesh.p(1,:); y = mesh.p(2,:); z = mesh.p(3,:);
 eps = 0.01*sqrt(min(mesh.A));
 
 % Dirichlet
-cx = 0;     
+cx = 0;
 node = find(x < cx + eps); node = node';
 npb = size(node,1); node = [node;node;node;node;node;node];
 dof = [ones(npb,1);2*ones(npb,1);3*ones(npb,1);4*ones(npb,1);5*ones(npb,1);6*ones(npb,1)];
 val = [zeros(npb,1);zeros(npb,1);zeros(npb,1);zeros(npb,1);zeros(npb,1);zeros(npb,1)];
 bc.pDir = [node, dof, val];
-				
+
 % Neumman
 cx = 2; cy = 0.5; cz = 0.5;
 [~,node4] = min((z - cz).^2 + (x - cx).^2 + (y-cy).^2);

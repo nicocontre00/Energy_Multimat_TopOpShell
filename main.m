@@ -58,9 +58,11 @@ cd('examples\shell')
 %     [mesh, pdecoef, matprop, params, bc, psi, signatures] = grua_2m;
 %     [mesh, pdecoef, matprop, params, bc, psi, signatures] = grua_3m;
 %     [mesh, pdecoef, matprop, params, bc, psi, signatures] = shviga2x1_2m(mesh, psi);
-    [mesh, pdecoef, matprop, params, bc, psi, signatures] = shviga2x1_3m(mesh, psi);
+%     [mesh, pdecoef, matprop, params, bc, psi, signatures] = shviga2x1_3m(mesh, psi);
 %     [mesh, pdecoef, matprop, params, bc, psi, signatures] = shcog_2m(mesh, psi);
 %     [mesh, pdecoef, matprop, params, bc, psi, signatures] = shcog_3m(mesh, psi);
+    [mesh, pdecoef, matprop, params, bc, psi, signatures] = wing_2m(mesh, psi);
+%     [mesh, pdecoef, matprop, params, bc, psi, signatures] = wing_3m(mesh, psi);
 cd ..\..
 filename = 'wall_2m';
 %Configure default settings for plot functions
@@ -78,10 +80,20 @@ volfrac = params.volfrac; auglag = params.auglag; voleps = params.voleps;
 
 % freeze nodes
 phold = [];
-for i = 1:size(mesh.ghold,1)
-    phold = cat(1,phold,unique(t(1:3,t(4,:)==mesh.ghold(i))));
+f = pdecoef.f;
+if size(f,1)==6;
+rg = mesh.RG';
+ghold = mesh.ghold';
+    for i = 1:size(mesh.ghold,1)
+        phold = cat(1,phold,unique(t(1:3,rg == ghold(i))));
+    end
+else
+    for i = 1:size(mesh.ghold,1)
+        phold = cat(1,phold,unique(t(1:3,t(4,:)==mesh.ghold(i))));
+    end
 end
 pfree = setdiff(1:size(p,2),phold); % free nodes
+
 
 f = pdecoef.f;
 if size(f,1)==6;
@@ -93,7 +105,7 @@ else
     pdeplot(p,e,t,'xydata',t(4,:),'xystyle','flat','colormap','gray',...
                   'xygrid','off','colorbar','off','title','Geometry'); 
     axis image; axis off;
-    
+
     figure(1); clf;
     set(1,'WindowStyle','docked');
     pdemesh(p,e,t); axis image; axis off;
@@ -141,11 +153,11 @@ while not(strcmp(option,'s'))
     %-----------Initial values-----------%
     [U,F,volume] = solve(psi, mesh, matprop, pdecoef, bc, signatures);
     [sf,Epot] = shfunc(F,U,volume,params,pdecoef);
-    
+
     % compute function g: g = -DT (bulk) and g = DT (inclusion)
     dt = topder(mesh,U,volume,matprop,psi,params,pdecoef,signatures);
     dt = dt/normL2(unitM,dt);  % g function normalization
-    
+
     dt(phold,:) = psi(phold,:); % freeze dt function
 
     for i = 1 : length(matprop.E)-1
@@ -153,30 +165,30 @@ while not(strcmp(option,'s'))
     end
     cosin = max(min(sum(cosin),1.0),-1.0);
     theta = max(real(acos(cosin)),1.0e-4);
-    
+
     difvol = volume(1:end-1)-voltarget;
     ic = (abs(difvol) > volstop); %index control
     while and( or(any(ic),theta > stop) , k/2 > kmin)
-        
+
         iter = iter + 1;
         [U,F,volume] = solve(psi, mesh, matprop, pdecoef, bc, signatures);
         [sf,Epot] = shfunc(F,U,volume,params,pdecoef);
-        
+
         % compute function g: g = -DT (bulk) and g = DT (inclusion)
         dt = topder(mesh,U,volume,matprop,psi,params,pdecoef,signatures);
         dt = dt./normL2(unitM,dt);  % g function normalization
-        
+
         dt(phold,:) = psi(phold,:); % freeze dt function
-        
+ 
         for i = 1 : length(matprop.E)-1
             cosin(i) = psi(:,i)'*unitM*dt(:,i);
         end
         cosin = max(min(sum(cosin),1.0),-1.0);
         theta = max(real(acos(cosin)),1.0e-4);
-        
+
         % performs a line-search
         sfold = sf; psiold = psi; sf = sf + 1; k = min(1-(1e-5),1.5*k); % trick
-%       
+%
         while and((sf > sfold) , k>kmin)
 %             (sf - sfold > eps(sf))
             % update level-set function
@@ -188,14 +200,14 @@ while not(strcmp(option,'s'))
         end
         psi = psi/normL2(unitM,psi);
         k = k * 2;
-        
+
         [fi,~] = charfunc( p,t,psi,pdecoef); %calculate characteristic function for plot
-        
+
         gsf  = [gsf,sf];
         gEpot = [gEpot,Epot];
         gth  = [gth,theta];
         gvol = [gvol,volume(1:end-1)'*100/max_vol];
-        
+
         disp(['iter    = ', num2str(iter)]);
         disp(['volume  = ', num2str(volume(1:end-1)),' => ', sprintf(repmat(' %3.2f%%',1,length(volume)-1),volume(1:end-1)*100/max_vol)]);
         disp(['sf      = ', num2str(sf)]);
@@ -203,10 +215,9 @@ while not(strcmp(option,'s'))
         disp(['theta   = ', num2str(theta*180/pi)]);
         disp(['penalty = ', num2str(params.penalty)]);
         disp('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
-        
+
         facecolor = [186 212 244]/255;
         linecolor = [0 62 102]/255;
-
 
         if size(f,1)==6;
         colors = [0 0 0;1 0 0; 0 0 1;0 1 0];
@@ -219,6 +230,18 @@ while not(strcmp(option,'s'))
         colormap(colors);
         caxis([1 size(fi,2)])
         axis equal
+num_r = mesh.rib;
+r = mesh.RG;
+t_r = t(1:3,ismember(r,num_r'));
+id = unique(t_r);
+p_r = p(:,id);
+[~,t_r] = ismember(t_r,id);
+fi_r = fi_shell(id,:);
+figure(7); clf; set(7,'WindowStyle','docked');
+trisurf(t_r(1:3,:)',p_r(1,:),p_r(2,:),p_r(3,:),fi_r,'EdgeColor','none','FaceColor','interp')
+colormap(colors);
+% caxis([1 size(fi_r,2)])
+axis equal
         else
         if iter == 1 
             figTopology = figure(3); 
@@ -246,12 +269,11 @@ while not(strcmp(option,'s'))
         end
         title('Volume'); legend(leyenda),grid minor, xlim([0 iter]), ylim([-5 105])    
         set(6,'WindowStyle','docked');
-        
 
         %Update augmented lagrangian parameters
         difvol = volume(1:end-1)-voltarget;
         ic = (abs(difvol) > volstop); %index control
-        
+
         if any(ic==1) 
             if penalization == 2 % increase the penalization parameter
                 params.penalty = 2.0 * params.penalty;
@@ -265,7 +287,7 @@ while not(strcmp(option,'s'))
             end
         end
     end
-         
+
     option = 'null';
     while and(not(strcmp(option,'r')), and(not(strcmp(option,'s')), not(strcmp(option,'c'))))
         option = input('\n -> type "r" to remesh or "s" to stop : ', 's');
