@@ -61,8 +61,8 @@ cd('examples\shell')
 %     [mesh, pdecoef, matprop, params, bc, psi, signatures] = shviga2x1_3m(mesh, psi);
 %     [mesh, pdecoef, matprop, params, bc, psi, signatures] = shcog_2m(mesh, psi);
 %     [mesh, pdecoef, matprop, params, bc, psi, signatures] = shcog_3m(mesh, psi);
-    [mesh, pdecoef, matprop, params, bc, psi, signatures] = wing_2m(mesh, psi);
-%     [mesh, pdecoef, matprop, params, bc, psi, signatures] = wing_3m(mesh, psi);
+%     [mesh, pdecoef, matprop, params, bc, psi, signatures] = wing_2m(mesh, psi);
+    [mesh, pdecoef, matprop, params, bc, psi, signatures] = wing_3m(mesh, psi);
 cd ..\..
 filename = 'wall_2m';
 %Configure default settings for plot functions
@@ -81,7 +81,7 @@ volfrac = params.volfrac; auglag = params.auglag; voleps = params.voleps;
 % freeze nodes
 phold = [];
 f = pdecoef.f;
-if size(f,1)==6;
+if isfield(mesh, 'RG')
 rg = mesh.RG';
 ghold = mesh.ghold';
     for i = 1:size(mesh.ghold,1)
@@ -230,18 +230,20 @@ while not(strcmp(option,'s'))
         colormap(colors);
         caxis([1 size(fi,2)])
         axis equal
-num_r = mesh.rib;
-r = mesh.RG;
-t_r = t(1:3,ismember(r,num_r'));
-id = unique(t_r);
-p_r = p(:,id);
-[~,t_r] = ismember(t_r,id);
-fi_r = fi_shell(id,:);
-figure(7); clf; set(7,'WindowStyle','docked');
-trisurf(t_r(1:3,:)',p_r(1,:),p_r(2,:),p_r(3,:),fi_r,'EdgeColor','none','FaceColor','interp')
-colormap(colors);
-% caxis([1 size(fi_r,2)])
-axis equal
+            if isfield(mesh, 'RG')
+                num_r = mesh.rib;
+                r = mesh.RG;
+                t_r = t(1:3,ismember(r,num_r'));
+                id = unique(t_r);
+                p_r = p(:,id);
+                [~,t_r] = ismember(t_r,id);
+                fi_r = fi_shell(id,:);
+                figure(7); clf; set(7,'WindowStyle','docked');
+                trisurf(t_r(1:3,:)',p_r(1,:),p_r(2,:),p_r(3,:),fi_r,'EdgeColor','none','FaceColor','interp')
+                colormap(colors);
+               % caxis([1 size(fi_r,2)])
+                axis equal
+            end
         else
         if iter == 1 
             figTopology = figure(3); 
@@ -255,8 +257,8 @@ axis equal
 %       FRAMES(iter) = getframe(gcf);
         figure(4); clf;hold on, plot(gsf,'k-','LineWidth',1.2); %title('Shape Function');
         ymax = max(max(gsf),max(gEpot));
-        yyaxis left; ylabel('Shape Function'), ylim([0 ymax])
-        yyaxis right; plot(gEpot,'-','LineWidth',1.2); ylabel('Epot'),grid minor, xlim([0 iter]), ylim([0 ymax])
+        yyaxis left; ylabel('Shape Function'), ylim([0 ymax])%ylim('auto') 
+        yyaxis right; plot(gEpot,'-','LineWidth',1.2); ylabel('Epot'),grid minor, xlim([0 iter]),ylim([0 ymax]) %ylim('auto') 
         set(4,'WindowStyle','docked');
         figure(5); clf; plot(gth*180/pi,'-','MarkerFaceColor',facecolor,'Color',linecolor,'LineWidth',1.2); title('Theta Angle');
         grid minor , xlim([0 iter]),ylim([min(gth*180/pi)-5 max(gth*180/pi)+10])

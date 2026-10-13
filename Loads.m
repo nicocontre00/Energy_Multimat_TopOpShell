@@ -36,7 +36,7 @@ g0bot = g_old(ismember(r_old,bot0),:); % Old barycenters matrix of the bottom fa
 g0side = g_old(ismember(r_old,side0),:); % Old barycenters matrix of the side face
 
 run('wing_coefficients.m'); 
-Cf0_t = wing.Cft; Cf0_z = wing.Cfz; Cp0 = wing.Cp;  % Old Wing Coefficients
+Cf0_t = wing.Cft / 150; Cf0_z = wing.Cfz / 300; Cp0 = wing.Cp;  % Old Wing Coefficients
 % Cf0_t = pdeprtni(p_old, t_old, Cf0_t);
 % Cf0_z = pdeprtni(p_old, t_old, Cf0_z);
 % Cp0 = pdeprtni(p_old, t_old, Cp0);

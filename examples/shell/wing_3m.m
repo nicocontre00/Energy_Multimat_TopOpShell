@@ -1,7 +1,7 @@
 function [mesh, pdecoef, matprop, params, bc, psi, signatures] = wing_3m(mesh, psi)
 %% Mesh selection
 
-meshes = {'wing_msh2.m'};
+meshes = {'wing_msh.m'};
 
 if isempty(mesh)
     index = 1;
@@ -29,8 +29,8 @@ mesh.index = index;
 
 gamma = 1.0e-4;
 nu = 0.3; 
-h = 1;  
-E0 = 210.0E+3;
+h = 0.1;  
+E0 = 70.0E+3;
 E = E0*[1 1/2 1/1000];
 
 matprop.nu0 = nu;
@@ -85,7 +85,7 @@ x = mesh.p(1,:); y = mesh.p(2,:); z = mesh.p(3,:);
 eps = 0.01*sqrt(min(mesh.A));
 
 % Dirichlet
-cz = 0.3116122402*1000;   
+cz = 0.3116125234*1000;   
 node = find(z < cz + eps); node = node';
 npb = size(node,1); node = [node;node;node;node;node;node];
 dof = [ones(npb,1);2*ones(npb,1);3*ones(npb,1);4*ones(npb,1);5*ones(npb,1);6*ones(npb,1)];
