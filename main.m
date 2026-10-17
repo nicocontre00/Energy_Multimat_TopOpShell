@@ -62,7 +62,8 @@ cd('examples\shell')
 %     [mesh, pdecoef, matprop, params, bc, psi, signatures] = shcog_2m(mesh, psi);
 %     [mesh, pdecoef, matprop, params, bc, psi, signatures] = shcog_3m(mesh, psi);
 %     [mesh, pdecoef, matprop, params, bc, psi, signatures] = wing_2m(mesh, psi);
-    [mesh, pdecoef, matprop, params, bc, psi, signatures] = wing_3m(mesh, psi);
+%     [mesh, pdecoef, matprop, params, bc, psi, signatures] = wing_3m(mesh, psi);
+    [mesh, pdecoef, matprop, params, bc, psi, signatures] = wing_4m(mesh, psi);
 cd ..\..
 filename = 'wall_2m';
 %Configure default settings for plot functions
@@ -183,6 +184,7 @@ while not(strcmp(option,'s'))
         for i = 1 : length(matprop.E)-1
             cosin(i) = psi(:,i)'*unitM*dt(:,i);
         end
+        
         cosin = max(min(sum(cosin),1.0),-1.0);
         theta = max(real(acos(cosin)),1.0e-4);
 
@@ -190,7 +192,7 @@ while not(strcmp(option,'s'))
         sfold = sf; psiold = psi; sf = sf + 1; k = min(1-(1e-5),1.5*k); % trick
 %
         while and((sf > sfold) , k>kmin)
-%             (sf - sfold > eps(sf))
+%           (sf - sfold > eps(sf))
             % update level-set function
             psi(pfree,:)  = (sin((1-k)*theta)*psiold(pfree,:)...
                 +  sin(k*theta)*dt(pfree,:))./sin(theta);
@@ -230,20 +232,86 @@ while not(strcmp(option,'s'))
         colormap(colors);
         caxis([1 size(fi,2)])
         axis equal
-            if isfield(mesh, 'RG')
-                num_r = mesh.rib;
-                r = mesh.RG;
-                t_r = t(1:3,ismember(r,num_r'));
-                id = unique(t_r);
-                p_r = p(:,id);
-                [~,t_r] = ismember(t_r,id);
-                fi_r = fi_shell(id,:);
-                figure(7); clf; set(7,'WindowStyle','docked');
-                trisurf(t_r(1:3,:)',p_r(1,:),p_r(2,:),p_r(3,:),fi_r,'EdgeColor','none','FaceColor','interp')
-                colormap(colors);
-               % caxis([1 size(fi_r,2)])
-                axis equal
-            end
+%             if isfield(mesh, 'RG')
+%                 num_r = mesh.rib;
+%                 r = mesh.RG;
+%                 t_r = t(1:3,ismember(r,num_r'));
+%                 id = unique(t_r);
+%                 p_r = p(:,id);
+%                 [~,t_r] = ismember(t_r,id);
+%                 fi_r = fi_shell(id,:);
+%                 figure(7); clf; set(7,'WindowStyle','docked');
+%                 trisurf(t_r(1:3,:)',p_r(1,:),p_r(2,:),p_r(3,:),fi_r,'EdgeColor','none','FaceColor','interp')
+%                 colormap(colors);
+%                 caxis([1 size(fi,2)]);
+%                 axis equal
+%             end
+
+if isfield(mesh,'RG')
+
+    % =====================================================
+    % FIGURA 7 - COSTILLAS CON GRAFICADO TIPO comp.m
+    % =====================================================
+
+    % 1. Seleccionar elementos pertenecientes a costillas
+    rg = mesh.RG(:);
+    rib = mesh.rib(:);
+
+    id_rib = ismember(rg,rib);
+
+    % 2. Interpolar funciones caracteristicas a elementos
+    nmat = size(fi,2);
+    nelem = size(t,2);
+
+    fi_elem = zeros(nelem,nmat);
+
+    for im = 1:nmat
+    aux = pdeintrp(p,t,fi(:,im));
+    fi_elem(:,im) = aux(:);
+    end
+
+    % 3. Seleccionar solamente elementos de costillas
+    tri_rib = t(1:3,id_rib)';
+    fi_rib = fi_elem(id_rib,:);
+
+    % 4. Excluir el ultimo material (vacio)
+    fi_solid = fi_rib(:,1:end-1);
+
+    % 5. Identificar material solido predominante
+    [intensidad,material] = max(fi_solid,[],2);
+
+    % 6. No dibujar elementos completamente vacios
+    visible = intensidad > 0;
+
+    tri_plot = tri_rib(visible,:);
+    intensidad = intensidad(visible);
+    material = material(visible);
+
+    % 7. Crear colores con fronteras aclaradas
+    baseRGB = colors(material,:);
+
+    RGB = 1 - (1-baseRGB).*intensidad;
+
+    % 8. Graficar costillas
+    figure(7); clf;
+    set(7,'WindowStyle','docked');
+
+    patch('Faces',tri_plot, ...
+          'Vertices',p', ...
+          'FaceVertexCData',RGB, ...
+          'FaceColor','flat', ...
+          'EdgeColor','none');
+
+    axis equal
+    axis tight
+    view(3)
+
+    title('Distribucion multimaterial - Costillas');
+
+    drawnow;
+
+end
+
         else
         if iter == 1 
             figTopology = figure(3); 
@@ -300,9 +368,12 @@ while not(strcmp(option,'s'))
 
             cd('examples\shell')
             %     [mesh, pdecoef, matprop, params, bc, psi, signatures] = shviga2x1_2m(mesh,psi);
-                [mesh, pdecoef, matprop, params, bc, psi, signatures] = shviga2x1_3m(mesh, psi);
-%                 [mesh, pdecoef, matprop, params, bc, psi, signatures] = shcog_2m(mesh, psi);
-%                 [mesh, pdecoef, matprop, params, bc, psi, signatures] = shcog_3m(mesh, psi);
+            %     [mesh, pdecoef, matprop, params, bc, psi, signatures] = shviga2x1_3m(mesh, psi);
+            %     [mesh, pdecoef, matprop, params, bc, psi, signatures] = shcog_2m(mesh, psi);
+            %     [mesh, pdecoef, matprop, params, bc, psi, signatures] = shcog_3m(mesh, psi);
+            %     [mesh, pdecoef, matprop, params, bc, psi, signatures] = wing_2m(mesh, psi);
+%                   [mesh, pdecoef, matprop, params, bc, psi, signatures] = wing_3m(mesh, psi);
+                [mesh, pdecoef, matprop, params, bc, psi, signatures] = wing_4m(mesh, psi);
             cd ..\..
 
             % update data            
@@ -311,11 +382,24 @@ while not(strcmp(option,'s'))
             area = mesh.A; np = mesh.np; vol0 = sum(area);
             
             % freeze nodes
-            phold = [];
-            for i = 1:size(mesh.ghold,1)
-                phold = cat(1,phold,unique(t(1:3,t(4,:)==mesh.ghold(i))));
-            end
-            pfree = setdiff(1:size(p,2),phold); % free nodes
+%             phold = [];
+%             for i = 1:size(mesh.ghold,1)
+%                 phold = cat(1,phold,unique(t(1:3,t(4,:)==mesh.ghold(i))));
+%             end
+%             pfree = setdiff(1:size(p,2),phold); % free nodes
+
+phold = [];
+
+rg = mesh.RG(:)';
+ghold = mesh.ghold(:)';
+
+for i = 1:length(ghold)
+    phold = [phold; unique(t(1:3,rg == ghold(i)))];
+end
+
+phold = unique(phold);
+
+pfree = setdiff(1:size(p,2),phold);
 
             figure(1); clf; set(1,'WindowStyle','docked'); 
             trisurf(t(1:3,:)',p(1,:),p(2,:),p(3,:),'FaceColor',[0.5 0.5 0.5]); 
@@ -379,11 +463,25 @@ while not(strcmp(option,'s'))
             bc.pDir = pbc;
             
             % freeze groups
-            phold = [];
-            for i = 1:size(mesh.ghold,1)
-                phold = cat(1,phold,unique(t(1:3,t(4,:)==mesh.ghold(i)))); %nodes to block
-            end
-            pfree = setdiff(1:size(p,2),phold);
+%             phold = [];
+%             for i = 1:size(mesh.ghold,1)
+%                 phold = cat(1,phold,unique(t(1:3,t(4,:)==mesh.ghold(i)))); %nodes to block
+%             end
+%             pfree = setdiff(1:size(p,2),phold);
+
+phold = [];
+
+rg = mesh.RG(:)';
+ghold = mesh.ghold(:)';
+
+for i = 1:length(ghold)
+    phold = [phold; unique(t(1:3,rg == ghold(i)))];
+end
+
+phold = unique(phold);
+
+pfree = setdiff(1:size(p,2),phold);
+
             option = 'null';
             
             % shape functional and volume associated to the hold-all domain

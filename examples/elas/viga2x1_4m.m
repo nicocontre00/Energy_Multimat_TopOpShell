@@ -20,7 +20,7 @@ function [mesh, pdecoef, matprop, params, bc, psi] = viga2x1_4m
     params.penalty = [0.0 0.0 0.0];   % method 1,2 and 3
     params.volfrac = 0.6*[1/3 1/3 1/3];   % method 2 and 3
     params.voleps  = [0.01 0.01 0.01];  % method 2 and 3
-    params.auglag  = [0.04 0.04 0.04];   % method 3
+    params.auglag  = [0.10 0.05 0.05];   % method 3
     params.epsilon = 0.01;  % method 3       
     
     

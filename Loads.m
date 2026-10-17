@@ -1,8 +1,8 @@
 % clear all, close all, clc
-function [pNeu] = Loads
+function [pNeu] = Loads(msh)
 
 cd('examples\shell')
-run('wing_msh.m');
+% run('wing_msh.m');
 p = msh.POS; t = msh.TRIANGLES; r = msh.RG;
 
 num_r = msh.shell; % Geometric region number of the new mesh

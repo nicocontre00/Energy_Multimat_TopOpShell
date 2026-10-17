@@ -1,7 +1,7 @@
 function [mesh, pdecoef, matprop, params, bc, psi, signatures] = wing_2m(mesh, psi)
 %% Mesh selection
 
-meshes = {'wing_msh.m'};
+meshes = {'wing_msh00.m','wing_msh01.m','wing_msh02.m'};
 
 if isempty(mesh)
     index = 1;
@@ -13,7 +13,7 @@ else
     run(meshes{index});    
     cd ..  
     cd ..
-	    [psi]=Interpolation(psi,mesh,msh);
+	    [psi]=InterpolationCSG(psi,mesh,msh);
     cd('examples\shell')		
 end
 
@@ -75,7 +75,7 @@ params.penalization = 3;
 % penalty parameter
 
 params.penalty = [0.0];   % method 1,2 and 3	% La penalizacion en este caso es solo un valor inicial
-params.volfrac = [0.97];   % method 2 and 3		% Porcentaje del volumen final que buscamos (En este ejemplo es 20%)
+params.volfrac = [0.85 + 0.15*0.8];   % method 2 and 3		% Porcentaje del volumen final que buscamos (En este ejemplo es 20%)
 params.voleps  = [0.01];  % method 2 and 3		% Tolerancia que se puede admitir en el volumen final 0.01
 params.auglag  = [0.07];   % method 3			% Coeficiente de actualizacion del multiplicador de Lagrange (penalty aumenta mas o menos rapido) (Profe recomendo un 0.1)
 params.epsilon = 0.01;  % method 3 
@@ -94,7 +94,7 @@ val = [zeros(npb,1);zeros(npb,1);zeros(npb,1);zeros(npb,1);zeros(npb,1);zeros(np
 bc.pDir = [node, dof, val];
 
 % Neumman
-[pNeu] = Loads;
+[pNeu] = Loads(msh);
 bc.pNeu = pNeu; 
 
 % cx = 2.607188617*1000; cy = 0.248995295*1000; cz = 3.116122402*1000;
