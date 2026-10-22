@@ -232,85 +232,47 @@ while not(strcmp(option,'s'))
         colormap(colors);
         caxis([1 size(fi,2)])
         axis equal
-%             if isfield(mesh, 'RG')
-%                 num_r = mesh.rib;
-%                 r = mesh.RG;
-%                 t_r = t(1:3,ismember(r,num_r'));
-%                 id = unique(t_r);
-%                 p_r = p(:,id);
-%                 [~,t_r] = ismember(t_r,id);
-%                 fi_r = fi_shell(id,:);
-%                 figure(7); clf; set(7,'WindowStyle','docked');
-%                 trisurf(t_r(1:3,:)',p_r(1,:),p_r(2,:),p_r(3,:),fi_r,'EdgeColor','none','FaceColor','interp')
-%                 colormap(colors);
-%                 caxis([1 size(fi,2)]);
-%                 axis equal
-%             end
-
-if isfield(mesh,'RG')
-
-    % =====================================================
-    % FIGURA 7 - COSTILLAS CON GRAFICADO TIPO comp.m
-    % =====================================================
-
-    % 1. Seleccionar elementos pertenecientes a costillas
-    rg = mesh.RG(:);
-    rib = mesh.rib(:);
-
-    id_rib = ismember(rg,rib);
-
-    % 2. Interpolar funciones caracteristicas a elementos
-    nmat = size(fi,2);
-    nelem = size(t,2);
-
-    fi_elem = zeros(nelem,nmat);
-
-    for im = 1:nmat
-    aux = pdeintrp(p,t,fi(:,im));
-    fi_elem(:,im) = aux(:);
-    end
-
-    % 3. Seleccionar solamente elementos de costillas
-    tri_rib = t(1:3,id_rib)';
-    fi_rib = fi_elem(id_rib,:);
-
-    % 4. Excluir el ultimo material (vacio)
-    fi_solid = fi_rib(:,1:end-1);
-
-    % 5. Identificar material solido predominante
-    [intensidad,material] = max(fi_solid,[],2);
-
-    % 6. No dibujar elementos completamente vacios
-    visible = intensidad > 0;
-
-    tri_plot = tri_rib(visible,:);
-    intensidad = intensidad(visible);
-    material = material(visible);
-
-    % 7. Crear colores con fronteras aclaradas
-    baseRGB = colors(material,:);
-
-    RGB = 1 - (1-baseRGB).*intensidad;
-
-    % 8. Graficar costillas
-    figure(7); clf;
-    set(7,'WindowStyle','docked');
-
-    patch('Faces',tri_plot, ...
-          'Vertices',p', ...
-          'FaceVertexCData',RGB, ...
-          'FaceColor','flat', ...
-          'EdgeColor','none');
-
-    axis equal
-    axis tight
-    view(3)
-
-    title('Distribucion multimaterial - Costillas');
-
-    drawnow;
-
-end
+        if isfield(mesh,'RG')
+            rg  = mesh.RG(:);
+            rib = mesh.rib(:);
+            id_rib = ismember(rg,rib);
+            nmat = size(fi,2);
+            nelem = size(t,2);
+            fi_elem = zeros(nelem,nmat);
+            for im = 1:nmat
+                aux = pdeintrp(p,t,fi(:,im));
+                fi_elem(:,im) = aux(:);
+            end
+            tri_rib = t(1:3,id_rib)';    
+            fi_rib  = fi_elem(id_rib,:);  
+            fi_solid = fi_rib(:,1:end-1);
+            solid_sum = sum(fi_solid,2);
+            solid_sum = max(0,min(1,solid_sum));
+            tol_vis = 1e-8;
+            visible = solid_sum > tol_vis;
+            tri_plot   = tri_rib(visible,:);
+            fi_plot    = fi_solid(visible,:);
+            solid_plot = solid_sum(visible);
+            fi_norm = fi_plot ./ solid_plot;
+            solidColors = colors(1:end-1,:);
+            RGB_solid = fi_norm * solidColors;
+            RGB = RGB_solid .* solid_plot + (1 - solid_plot);
+            RGB = max(0,min(1,RGB));
+            figure(7); clf;
+            set(7,'WindowStyle','docked');
+        
+            patch('Faces',tri_plot, ...
+                  'Vertices',p', ...
+                  'FaceVertexCData',RGB, ...
+                  'FaceColor','flat', ...
+                  'EdgeColor','none');
+            axis equal
+            axis tight
+            view(3)
+            title('Distribucion multimaterial - Costillas');
+        
+            drawnow;
+        end
 
         else
         if iter == 1 

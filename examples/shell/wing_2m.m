@@ -1,7 +1,7 @@
 function [mesh, pdecoef, matprop, params, bc, psi, signatures] = wing_2m(mesh, psi)
 %% Mesh selection
 
-meshes = {'wing_msh00.m','wing_msh01.m','wing_msh02.m'};
+meshes = {'wing_msh02.m','wing_msh01.m','wing_msh02.m'};
 
 if isempty(mesh)
     index = 1;
@@ -30,7 +30,7 @@ mesh.index = index;
 
 gamma = 1.0e-4;
 nu = 0.3; 
-h = 0.4;
+h = 0.1;
 E0 = 70.0E+3; 
 E = E0*[1 1e-4];
 
@@ -75,9 +75,9 @@ params.penalization = 3;
 % penalty parameter
 
 params.penalty = [0.0];   % method 1,2 and 3	% La penalizacion en este caso es solo un valor inicial
-params.volfrac = [0.85 + 0.15*0.8];   % method 2 and 3		% Porcentaje del volumen final que buscamos (En este ejemplo es 20%)
+params.volfrac = [0.85 + 0.15*0.87]; %[0.85 + 0.15*0.87]   % method 2 and 3		% Porcentaje del volumen final que buscamos (En este ejemplo es 20%)
 params.voleps  = [0.01];  % method 2 and 3		% Tolerancia que se puede admitir en el volumen final 0.01
-params.auglag  = [0.07];   % method 3			% Coeficiente de actualizacion del multiplicador de Lagrange (penalty aumenta mas o menos rapido) (Profe recomendo un 0.1)
+params.auglag  = [1];   % method 3			% Coeficiente de actualizacion del multiplicador de Lagrange (penalty aumenta mas o menos rapido) (Profe recomendo un 0.1)
 params.epsilon = 0.01;  % method 3 
 
 %% boundary conditions

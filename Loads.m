@@ -35,45 +35,88 @@ g0top = g_old(ismember(r_old,top0),:); % Old barycenters matrix of the top face
 g0bot = g_old(ismember(r_old,bot0),:); % Old barycenters matrix of the bottom face
 g0side = g_old(ismember(r_old,side0),:); % Old barycenters matrix of the side face
 
-run('wing_coefficients.m'); 
-Cf0_t = wing.Cft / 150; Cf0_z = wing.Cfz / 300; Cp0 = wing.Cp;  % Old Wing Coefficients
-% Cf0_t = pdeprtni(p_old, t_old, Cf0_t);
-% Cf0_z = pdeprtni(p_old, t_old, Cf0_z);
-% Cp0 = pdeprtni(p_old, t_old, Cp0);
+run('wing_cf_xyz.m');
 
-Cp0top = Cp0(ismember(r_old,top0),:); % Old wing Coefficients of the top face
-Cp0bot = Cp0(ismember(r_old,bot0),:); % Old wing Coefficients of the bottom face
-Cp0side = Cp0(ismember(r_old,side0),:); % Old wing Coefficients of the side face
-Cf0_ztop = Cf0_z(ismember(r_old,top0),:); % Old wing Coefficients of the top face
-Cf0_zbot = Cf0_z(ismember(r_old,bot0),:); % Old wing Coefficients of the bottom face
-Cf0_zside = Cf0_z(ismember(r_old,side0),:); % Old wing Coefficients of the side face
-Cf0_ttop = Cf0_t(ismember(r_old,top0),:); % Old wing Coefficients of the top face
-Cf0_tbot = Cf0_t(ismember(r_old,bot0),:); % Old wing Coefficients of the bottom face
-Cf0_tside = Cf0_t(ismember(r_old,side0),:); % Old wing Coefficients of the side face
+C0 = [wing.Cp(:), wing.Cfx(:), wing.Cfy(:), wing.Cfz(:)];
 
-ICptop = scatteredInterpolant(g0top(:,1),g0top(:,2),g0top(:,3),Cp0top, 'natural', 'nearest');
-ICpbot = scatteredInterpolant(g0bot(:,1),g0bot(:,2),g0bot(:,3),Cp0bot, 'natural', 'nearest');
-ICpside = scatteredInterpolant(g0side(:,1),g0side(:,2),g0side(:,3),Cp0side, 'natural', 'nearest');
-ICf_ztop = scatteredInterpolant(g0top(:,1),g0top(:,2),g0top(:,3),Cf0_ztop, 'natural', 'nearest');
-ICf_zbot = scatteredInterpolant(g0bot(:,1),g0bot(:,2),g0bot(:,3),Cf0_zbot, 'natural', 'nearest');
-ICf_zside = scatteredInterpolant(g0side(:,1),g0side(:,2),g0side(:,3),Cf0_zside, 'natural', 'nearest');
-ICf_ttop = scatteredInterpolant(g0top(:,1),g0top(:,2),g0top(:,3),Cf0_ttop, 'natural', 'nearest');
-ICf_tbot = scatteredInterpolant(g0bot(:,1),g0bot(:,2),g0bot(:,3),Cf0_tbot, 'natural', 'nearest');
-ICf_tside = scatteredInterpolant(g0side(:,1),g0side(:,2),g0side(:,3),Cf0_tside, 'natural', 'nearest');
+assert(size(C0,1) == size(t_old,1), ...
+    'Los coeficientes no coinciden con la cantidad de triangulos');
 
-Cptop = ICptop(gtop(:,1),gtop(:,2),gtop(:,3));
-Cpbot = ICpbot(gbot(:,1),gbot(:,2),gbot(:,3));
-Cpside = ICpside(gside(:,1),gside(:,2),gside(:,3));
-Cf_ztop = ICf_ztop(gtop(:,1),gtop(:,2),gtop(:,3));
-Cf_zbot = ICf_zbot(gbot(:,1),gbot(:,2),gbot(:,3));
-Cf_zside = ICf_zside(gside(:,1),gside(:,2),gside(:,3));
-Cf_ttop = ICf_ttop(gtop(:,1),gtop(:,2),gtop(:,3));
-Cf_tbot = ICf_tbot(gbot(:,1),gbot(:,2),gbot(:,3));
-Cf_tside = ICf_tside(gside(:,1),gside(:,2),gside(:,3));
+assert(all(isfinite(C0(:))), ...
+    'Hay coeficientes no validos');
 
-Cp = [Cptop;Cpbot;Cpside];
-Cf_z = [Cf_ztop;Cf_zbot;Cf_zside];
-Cf_t = [Cf_ttop;Cf_tbot;Cf_tside];
+% Interpolar por separado en las superficies superior, inferior y lateral.
+regions0 = {top0, bot0, side0};
+targets = {gtop, gbot, gside};
+Cnew = cell(3,1);
+
+for k = 1:3
+    G = targets{k};
+    Cnew{k} = zeros(size(G,1),4);
+
+    if isempty(G)
+        continue
+    end
+
+    mask = ismember(r_old, regions0{k});
+
+    assert(any(mask), ...
+        'Una superficie nueva no tiene datos en la malla anterior');
+
+    G0 = g_old(mask,:);
+
+    for j = 1:4
+        I = scatteredInterpolant( ...
+            G0(:,1), G0(:,2), G0(:,3), C0(mask,j), ...
+            'natural', 'nearest');
+
+        Cnew{k}(:,j) = I(G(:,1), G(:,2), G(:,3));
+    end
+end
+Cnew = vertcat(Cnew{:});
+assert(all(isfinite(Cnew(:))), ...
+    'coeficientes no validos');
+
+Cp = Cnew(:,1);
+Cf = Cnew(:,2:4);  % Columnas: Cfx, Cfy, Cfz.
+
+
+% run('wing_coefficients.m'); 
+% Cf0_t = wing.Cft / 150; Cf0_z = wing.Cfz / 300; Cp0 = wing.Cp;  % Old Wing Coefficients
+% 
+% Cp0top = Cp0(ismember(r_old,top0),:); % Old wing Coefficients of the top face
+% Cp0bot = Cp0(ismember(r_old,bot0),:); % Old wing Coefficients of the bottom face
+% Cp0side = Cp0(ismember(r_old,side0),:); % Old wing Coefficients of the side face
+% Cf0_ztop = Cf0_z(ismember(r_old,top0),:); % Old wing Coefficients of the top face
+% Cf0_zbot = Cf0_z(ismember(r_old,bot0),:); % Old wing Coefficients of the bottom face
+% Cf0_zside = Cf0_z(ismember(r_old,side0),:); % Old wing Coefficients of the side face
+% Cf0_ttop = Cf0_t(ismember(r_old,top0),:); % Old wing Coefficients of the top face
+% Cf0_tbot = Cf0_t(ismember(r_old,bot0),:); % Old wing Coefficients of the bottom face
+% Cf0_tside = Cf0_t(ismember(r_old,side0),:); % Old wing Coefficients of the side face
+% 
+% ICptop = scatteredInterpolant(g0top(:,1),g0top(:,2),g0top(:,3),Cp0top, 'natural', 'nearest');
+% ICpbot = scatteredInterpolant(g0bot(:,1),g0bot(:,2),g0bot(:,3),Cp0bot, 'natural', 'nearest');
+% ICpside = scatteredInterpolant(g0side(:,1),g0side(:,2),g0side(:,3),Cp0side, 'natural', 'nearest');
+% ICf_ztop = scatteredInterpolant(g0top(:,1),g0top(:,2),g0top(:,3),Cf0_ztop, 'natural', 'nearest');
+% ICf_zbot = scatteredInterpolant(g0bot(:,1),g0bot(:,2),g0bot(:,3),Cf0_zbot, 'natural', 'nearest');
+% ICf_zside = scatteredInterpolant(g0side(:,1),g0side(:,2),g0side(:,3),Cf0_zside, 'natural', 'nearest');
+% ICf_ttop = scatteredInterpolant(g0top(:,1),g0top(:,2),g0top(:,3),Cf0_ttop, 'natural', 'nearest');
+% ICf_tbot = scatteredInterpolant(g0bot(:,1),g0bot(:,2),g0bot(:,3),Cf0_tbot, 'natural', 'nearest');
+% ICf_tside = scatteredInterpolant(g0side(:,1),g0side(:,2),g0side(:,3),Cf0_tside, 'natural', 'nearest');
+% 
+% Cptop = ICptop(gtop(:,1),gtop(:,2),gtop(:,3));
+% Cpbot = ICpbot(gbot(:,1),gbot(:,2),gbot(:,3));
+% Cpside = ICpside(gside(:,1),gside(:,2),gside(:,3));
+% Cf_ztop = ICf_ztop(gtop(:,1),gtop(:,2),gtop(:,3));
+% Cf_zbot = ICf_zbot(gbot(:,1),gbot(:,2),gbot(:,3));
+% Cf_zside = ICf_zside(gside(:,1),gside(:,2),gside(:,3));
+% Cf_ttop = ICf_ttop(gtop(:,1),gtop(:,2),gtop(:,3));
+% Cf_tbot = ICf_tbot(gbot(:,1),gbot(:,2),gbot(:,3));
+% Cf_tside = ICf_tside(gside(:,1),gside(:,2),gside(:,3));
+% 
+% Cp = [Cptop;Cpbot;Cpside];
+% Cf_z = [Cf_ztop;Cf_zbot;Cf_zside];
+% Cf_t = [Cf_ttop;Cf_tbot;Cf_tside];
 
 % cd ..\..
 % [rgp] = rgpernode(p,t,r,g); % Geometric region per node of the new mesh
@@ -110,7 +153,8 @@ n(invertir,:) = -n(invertir,:);
 q = 0.0512084; % [MPa] 51208.4 Pa
 Fp = -q.*A.*Cp.*n;
 
-Cf = [Cf_t, zeros(size(Cf_t,1),1), Cf_z];
+% Cf = [Cf_t, zeros(size(Cf_t,1),1), Cf_z];
+
 Ff = q.*A.*(Cf - dot(Cf,n,2).*n);
 F = Fp + Ff;
 
