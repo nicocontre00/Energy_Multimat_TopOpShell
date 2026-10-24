@@ -1,7 +1,7 @@
 function [mesh, pdecoef, matprop, params, bc, psi, signatures] = wing_2m(mesh, psi)
 %% Mesh selection
 
-meshes = {'wing_msh02.m','wing_msh01.m','wing_msh02.m'};
+meshes = {'wing_msh99.m','wing_msh01.m','wing_msh02.m'};
 
 if isempty(mesh)
     index = 1;

@@ -61,9 +61,9 @@ cd('examples\shell')
 %     [mesh, pdecoef, matprop, params, bc, psi, signatures] = shviga2x1_3m(mesh, psi);
 %     [mesh, pdecoef, matprop, params, bc, psi, signatures] = shcog_2m(mesh, psi);
 %     [mesh, pdecoef, matprop, params, bc, psi, signatures] = shcog_3m(mesh, psi);
-%     [mesh, pdecoef, matprop, params, bc, psi, signatures] = wing_2m(mesh, psi);
+      [mesh, pdecoef, matprop, params, bc, psi, signatures] = wing_2m(mesh, psi);
 %     [mesh, pdecoef, matprop, params, bc, psi, signatures] = wing_3m(mesh, psi);
-    [mesh, pdecoef, matprop, params, bc, psi, signatures] = wing_4m(mesh, psi);
+%     [mesh, pdecoef, matprop, params, bc, psi, signatures] = wing_4m(mesh, psi);
 cd ..\..
 filename = 'wall_2m';
 %Configure default settings for plot functions
@@ -94,7 +94,6 @@ else
     end
 end
 pfree = setdiff(1:size(p,2),phold); % free nodes
-
 
 f = pdecoef.f;
 if size(f,1)==6;
@@ -269,7 +268,7 @@ while not(strcmp(option,'s'))
             axis equal
             axis tight
             view(3)
-            title('Distribucion multimaterial - Costillas');
+            title('Costillas');
         
             drawnow;
         end
